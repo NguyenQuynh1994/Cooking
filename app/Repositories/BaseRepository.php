@@ -4,55 +4,62 @@ namespace App\Repositories;
 
 use DB;
 use Exception;
+use App\Repositories\BaseRepositoryInterface;
 
-abstract class BaseRepository
+abstract class BaseRepository implements BaseRepositoryInterface
 {
     protected $model;
 
-    public function index($subject, $options = [])
+    public function index($subject = null, $options = [])
     {
-        $limit = isset($options['limit']) ? $options['limit'] : config('common.limit.page_limit');
-        $order = isset($options['order']) ? $options['order'] : ['key' => 'id', 'aspect' => 'DESC'];
-        $filter = isset($options['filter']) ? $options['filter'] : [];
+        $data = $this->model->orderBy('id', 'DESC')->paginate(config('common.page.limit'));
 
-        try {
-            $rows = $this->model->where($filter)->orderBy($order['key'], $order['aspect'])->paginate($limit);
-            $data['subject'] = $subject;
-            $data['columns'] = isset($options['columns']) ? $options['columns'] : $this->model->getFillable();
-            array_unshift($data['columns'], 'id');
+        if (empty($data)) {
+            return $data['error'] = trans('message.item_not_exits');
+        }
 
-            if (count($rows)) {
-                $data['ids'] = [];
-                foreach ($rows as $key => $row) {
-                    $data['ids'][$key] = $row['id'];
-                    $rows[$key] = $row->where('id', $row['id'])->first($data['columns']);
-                }
-                $data['from'] = ($rows->currentPage() - 1) * config('common.limit.page_limit') + 1;
-                $data['to'] = $data['from'] + $rows->count() - 1;
+        $data['subject'] = $subject;
+        $data['columns'] = isset($options['columns']) ? $options['columns'] : $this->model->getFillable();
+        array_unshift($data['columns'], 'id');
+
+        if (count($rows)) {
+            $data['ids'] = [];
+
+            foreach ($rows as $key => $row) {
+                $data['ids'][$key] = $row['id'];
+                $rows[$key] = $row->where('id', $row['id'])->first($data['columns']);
             }
 
-            $data['total'] = $rows->total();
-            $data['rows'] = $rows;
-
-            return $data;
-        } catch (Exception $ex) {
-            return ['error' => $ex->getMessage()];
+            $data['from'] = ($rows->currentPage() - 1) * config('common.limit.page_limit') + 1;
+            $data['to'] = $data['from'] + $rows->count() - 1;
         }
+
+        $data['total'] = $rows->total();
+        $data['rows'] = $rows;
+
+        return $data;
     }
 
-    public function show($id)
+    public function find($id)
     {
-        try {
-            $data = $this->model->find($id);
+        $data = $this->model->find($id);
 
-            if (!$data) {
-                return ['error' => trans('message.item_not_exist')];
-            }
-
-            return $data;
-        } catch (Exception $ex) {
-            return ['error' => $ex->getMessage()];
+        if (empty($data)) {
+            $data['error'] = trans('message.item_not_exits');
         }
+
+        return $data;
+    }
+
+    public function lists($filter = [], $columns = [])
+    {
+        $data = $this->model->where($filter)->select($columns)->get();
+
+        if (! count($data)) {
+            $data['error'] = trans('message.item_not_exits');
+        }
+
+        return $data;
     }
 
     public function store($input)
@@ -60,30 +67,22 @@ abstract class BaseRepository
         try {
             $data = $this->model->create($input);
 
-            if (!$data) {
-                return ['error' => trans('message.creating_error')];
-            }
-
             return $data;
         } catch (Exception $ex) {
-            return ['error' => $ex->getMessage()];
+            return $data['error'] = trans('message.creating_error');
         }
     }
 
 
     public function update($input, $id)
     {
-        try {
-            $data = $this->model->where('id', $id)->update($input);
+        $data = $this->model->where('id', $id)->update($input);
 
-            if (!$data) {
-                return ['error' => trans('message.updating_error')];
-            }
-
-            return $id;
-        } catch (Exception $ex) {
-            return ['error' => $ex->getMessage()];
+        if (!$data) {
+            return ['error' => trans('message.updating_error')];
         }
+
+        return $id;
     }
 
     public function delete($ids)

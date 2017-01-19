@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\AdminAuth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
-use App\Http\Requests\UserLoginRequest;
 use Auth;
-use Validator;
-use Response;
+use App\Models\Admin;
 
 class LoginController extends Controller
 {
@@ -30,7 +28,8 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/home';
+    protected $redirectTo = '/admin_home';
+    protected $guard = 'admin';
 
     /**
      * Create a new controller instance.
@@ -42,17 +41,14 @@ class LoginController extends Controller
         $this->middleware('guest', ['except' => 'logout']);
     }
 
-    public function login(UserLoginRequest $request)
+    /**
+     * Show the application's login form.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function showLoginForm()
     {
-        $email = $request->input('email');
-        $password = $request->input('password');
-
-        if (Auth::attempt(['email' => $email, 'password' => $password, 'confirmed' => config('common.user.confirmed.is_confirm')], $request->has('remember'))) {
-
-            return Response::json(Auth::user());
-        } else {
-            return Response::json(['message' => 'username password doest not match']);
-        }
+        return view('admin_auth.login');
     }
 
     public function logout(Request $request)
@@ -63,6 +59,11 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect('/home');
+        return redirect('/admin_login');
+    }
+
+    protected function guard()
+    {
+        return Auth::guard('admin');
     }
 }

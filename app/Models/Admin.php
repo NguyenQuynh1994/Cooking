@@ -2,14 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Admin extends Authenticatable
+class Admin extends User
 {
-    use Notifiable;
-    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

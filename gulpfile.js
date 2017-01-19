@@ -16,5 +16,9 @@ require('laravel-elixir-vue');
 elixir(mix => {
     mix.styles('layout.css')
        .sass('app.scss')
-       .webpack('app.js');
+       .webpack('app.js')
+       .scripts('angularjs/app.js', 'public/angularjs/app.js')
+       .scripts('angularjs/controllers/loginCtrl.js', 'public/angularjs/controllers/loginCtrl.js')
+       .scripts('angularjs/controllers/navCtrl.js', 'public/angularjs/controllers/navCtrl.js')
+       .scripts('angularjs/services/user.js', 'public/angularjs/services/user.js');
 });
